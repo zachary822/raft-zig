@@ -93,7 +93,7 @@ fn resetElectionTimer(self: *Node) void {
 
 pub fn step(self: *Node, msg: Message) Storage.Error!void {
     if (msg.term > self.current_term)
-        self.becomeFollower(msg.term);
+        try self.becomeFollower(msg.term);
 
     switch (msg.body) {
         .append_entries => {},
@@ -109,12 +109,13 @@ fn becomeFollower(self: *Node, term: Term) Storage.Error!void {
         self.current_term = term;
         self.voted_for = null;
         self.leader_id = null;
+        try self.persistHardState();
     }
     self.role = .follower;
 }
 
 fn persistHardState(self: *Node) Storage.Error!void {
-    self.storage.setHardState(.{
+    return self.storage.setHardState(.{
         .current_term = self.current_term,
         .voted_for = self.voted_for,
     });
